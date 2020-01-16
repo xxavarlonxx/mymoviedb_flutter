@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:simple_animations/simple_animations.dart';
 
 import '../contants.dart';
 class LoginScreen extends StatefulWidget {
@@ -7,14 +8,54 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin{
 
-  bool isLoading = false;
+
+
+  AnimationController _widthController;
+  AnimationController _fadeOutController;
+  AnimationController _fadeInController;
+  Animation<double> _widthAnimation;
+  Animation<double> _fadeOutAnimation;
+  Animation<double> _fadeInAnimation;
+
+
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
 
+  bool isLoading = false;
   String emailValue = '';
   String passwordValue = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _widthController = AnimationController(vsync: this, duration: Duration(milliseconds: 600));
+    _widthAnimation = Tween<double>(begin: 200, end: 50).animate(_widthController);
+
+    _fadeOutController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    _fadeOutAnimation = Tween<double>(begin: 100, end: 0).animate(_fadeOutController);
+
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: <Widget>[
+              _buildLoginHeader(MediaQuery.of(context).size.height),
+              _buildLoginForm(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildLoginHeader(double screenHeight){
     return ClipPath(
@@ -141,15 +182,20 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginButton(){
-    return FlatButton(onPressed: (){
-      login();
-    },
-      child: isLoading ? _buildLoadingCircle() : Text('LOGIN', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5),),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(40)
+    return AnimatedBuilder(
+      animation: _widthController,
+      builder: (context, child) => Transform.scale(scale: _widthController.value),
+      child: FlatButton(onPressed: (){
+        //login();
+        _widthController.forward();
+      },
+        child: isLoading ? _buildLoadingCircle() : Text('LOGIN', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5),),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(40)
+        ),
+        padding: EdgeInsets.symmetric(vertical: 16),
+        color: Theme.of(context).primaryColor,
       ),
-      padding: EdgeInsets.symmetric(vertical: 16),
-      color: Theme.of(context).primaryColor,
     );
   }
 
@@ -179,22 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
     print("Login");
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              _buildLoginHeader(MediaQuery.of(context).size.height),
-              _buildLoginForm(),
-             ],
-          ),
-        ),
-      ),
-    );
-  }
+
 }
 
 class BottomCurveClipper extends CustomClipper<Path>{

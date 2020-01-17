@@ -13,7 +13,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primaryColor: Colors.orange
       ),
-      home: LoginScreen()
+      initialRoute: 'login',
+      routes: {
+        'login': (_) => LoginScreen()
+      },
     );
   }
 }

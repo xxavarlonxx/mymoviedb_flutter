@@ -12,13 +12,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
 
 
-  AnimationController _widthController;
-  AnimationController _fadeOutController;
-  AnimationController _fadeInController;
-  Animation<double> _widthAnimation;
-  Animation<double> _fadeOutAnimation;
-  Animation<double> _fadeInAnimation;
+  //AnimationController controller;
+  Animation animation;
+  //AnimationController _fadeOutController;
+  //AnimationController _fadeInController;
+  //Animation<double> _widthAnimation;
+  //Animation<double> _fadeOutAnimation;
+  //Animation<double> _fadeInAnimation;
 
+  GlobalKey globalKey = GlobalKey();
+  double buttonWidth = double.infinity;
 
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
@@ -27,16 +30,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   String emailValue = '';
   String passwordValue = '';
 
-  @override
+  /*@override
   void initState() {
     super.initState();
-    _widthController = AnimationController(vsync: this, duration: Duration(milliseconds: 600));
-    _widthAnimation = Tween<double>(begin: 200, end: 50).animate(_widthController);
+    controller = AnimationController(vsync: this, duration: Duration(seconds: 1));
+    controller.addListener((){
+      print(animation.value);
+      setState(() {
 
-    _fadeOutController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-    _fadeOutAnimation = Tween<double>(begin: 100, end: 0).animate(_fadeOutController);
+      });
+    });
+    
+    animation = Tween<double>(begin: double.infinity, end: 50).animate(controller);
+    
+    //controller.forward();
+    //_widthAnimation = Tween<double>(begin: 200, end: 50).animate(_widthController);
 
-  }
+    //_fadeOutController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    //_fadeOutAnimation = Tween<double>(begin: 100, end: 0).animate(_fadeOutController);
+
+  }*/
 
 
   @override
@@ -49,6 +62,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             children: <Widget>[
               _buildLoginHeader(MediaQuery.of(context).size.height),
               _buildLoginForm(),
+              _buildLoginButton(),
+              _buildSigninButton()
             ],
           ),
         ),
@@ -68,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               height: 120.0,
               width: 120.0,
               child: Center(
-                child: Text('M', style: TextStyle(fontSize: 90, color: Colors.orange, fontWeight: FontWeight.w900),),
+                child: Text('M', style: TextStyle(fontSize: 90.0, color: Colors.orange, fontWeight: FontWeight.w900),),
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
@@ -90,8 +105,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           SizedBox(height: 16),
           _buildPasswordTextfield(),
           SizedBox(height: 24.0,),
-          _buildLoginButton(),
-          _buildSigninButton(),
+          //_buildLoginButton(),
+          //_buildSigninButton(),
         ],
       ),
     );
@@ -149,6 +164,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       },
       onSubmitted: (_){
         login();
+
       },
       focusNode: _passwordFocusNode,
       controller: _controller,
@@ -182,27 +198,48 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Widget _buildLoginButton(){
-    return AnimatedBuilder(
-      animation: _widthController,
-      builder: (context, child) => Transform.scale(scale: _widthController.value),
-      child: FlatButton(onPressed: (){
-        //login();
-        _widthController.forward();
-      },
-        child: isLoading ? _buildLoadingCircle() : Text('LOGIN', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5),),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(40)
+    return  Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: Container(
+          key: globalKey,
+          width: buttonWidth,
+          child: FlatButton(onPressed: (){
+                //login();
+                setState(() {
+                  isLoading = true;
+                });
+                animateButton();
+              },
+                child: isLoading ? _buildLoadingCircle() : Text('LOGIN', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5),),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100)
+                ),
+                padding: EdgeInsets.all(16.0),
+                color: Theme.of(context).primaryColor,
+          ),
         ),
-        padding: EdgeInsets.symmetric(vertical: 16),
-        color: Theme.of(context).primaryColor,
-      ),
     );
   }
 
+  animateButton(){
+    double initialWidth = globalKey.currentContext.size.width;
+    var controller = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    animation = Tween(begin: initialWidth, end: 72.0).animate(controller);
+
+    animation.addListener((){
+      setState(() {
+        buttonWidth = animation.value;
+        print(buttonWidth);
+      });
+    });
+
+    controller.forward();
+  }
+
   Widget _buildLoadingCircle(){
-    return SpinKitDualRing(
+    return SpinKitCircle(
       color: Colors.white,
-      size: 20.0,
+      size: 40.0,
     );
   }
 

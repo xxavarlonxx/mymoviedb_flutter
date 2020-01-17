@@ -1,232 +1,334 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:simple_animations/simple_animations.dart';
+import 'package:mymoviedb/services/api_service.dart';
+import 'package:simple_animations/simple_animations/controlled_animation.dart';
+import '../components/login_header.dart';
+import '../helper.dart';
 
 import '../contants.dart';
+
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin{
-
-
-
-  //AnimationController controller;
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   Animation animation;
-  //AnimationController _fadeOutController;
-  //AnimationController _fadeInController;
-  //Animation<double> _widthAnimation;
-  //Animation<double> _fadeOutAnimation;
-  //Animation<double> _fadeInAnimation;
 
-  GlobalKey globalKey = GlobalKey();
+  GlobalKey loginButtonKey = GlobalKey();
+  GlobalKey signInButtonKey = GlobalKey();
+
   double buttonWidth = double.infinity;
 
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _passwordConfirmation = FocusNode();
 
-  bool isLoading = false;
-  String emailValue = '';
-  String passwordValue = '';
+  bool _isLoading = false;
+  int _currentPageIndex = 0;
+  String _emailValue = '';
+  String _passwordValue = '';
+  String _nameValue = '';
+  String _passwordConfimationValue = '';
 
-  /*@override
+  PageController _pageController = PageController(initialPage: 0);
+
+  @override
   void initState() {
     super.initState();
-    controller = AnimationController(vsync: this, duration: Duration(seconds: 1));
-    controller.addListener((){
-      print(animation.value);
+    _pageController = PageController(initialPage: 0);
+    _pageController.addListener(() {
       setState(() {
-
+        _currentPageIndex = _pageController.page.toInt();
       });
     });
-    
-    animation = Tween<double>(begin: double.infinity, end: 50).animate(controller);
-    
-    //controller.forward();
-    //_widthAnimation = Tween<double>(begin: 200, end: 50).animate(_widthController);
-
-    //_fadeOutController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-    //_fadeOutAnimation = Tween<double>(begin: 100, end: 0).animate(_fadeOutController);
-
-  }*/
-
+  }
 
   @override
   Widget build(BuildContext context) {
+    double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              _buildLoginHeader(MediaQuery.of(context).size.height),
-              _buildLoginForm(),
-              _buildLoginButton(),
-              _buildSigninButton()
-            ],
-          ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: <Widget>[
+            LoginHeader(),
+            Container(
+              height: screenHeight * 0.5,
+              child: ControlledAnimation(
+                duration: Duration(seconds: 1),
+                delay: Duration(milliseconds: 500),
+                tween: Tween<double>(begin: 0.0, end: 1.0),
+                builder: (context, value) {
+                  return Opacity(
+                    opacity: value,
+                    child: PageView(
+                      physics: new NeverScrollableScrollPhysics(),
+                      controller: _pageController,
+                      children: <Widget>[getLoginForm(), getSigninForm()],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-
-  Widget _buildLoginHeader(double screenHeight){
-    return ClipPath(
-      clipper: BottomCurveClipper(),
-      child: Container(
-          height: screenHeight * 0.5,
-          color: Colors.orange,
-          child: Center(
-            child: Container(
-              height: 120.0,
-              width: 120.0,
-              child: Center(
-                child: Text('M', style: TextStyle(fontSize: 90.0, color: Colors.orange, fontWeight: FontWeight.w900),),
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.white,
-              ),
-            ),
-          ),
-      ),
-    );
-  }
-
-  Widget _buildLoginForm (){
+  Widget getLoginForm() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _buildEMailTextfield(),
+          getEMailTextfield(),
           SizedBox(height: 16),
-          _buildPasswordTextfield(),
-          SizedBox(height: 24.0,),
-          //_buildLoginButton(),
-          //_buildSigninButton(),
+          getPasswordTextfield(),
+          SizedBox(
+            height: 32.0,
+          ),
+          getSubmitButton(loginButtonKey,kLoginButtonText, login),
+          getGoToButton(kNotAnAccount, 1)
         ],
       ),
     );
   }
 
-  Widget _buildEMailTextfield(){
-    TextEditingController _controller = TextEditingController();
-    _controller.value = TextEditingValue(text: emailValue);
-
-    return TextField(
-      onChanged: (value){
-          emailValue = value;
-      },
-      onSubmitted: (_){
-        _fieldFocusChange(context, _emailFocusNode, _passwordFocusNode);
-      },
-      focusNode: _emailFocusNode,
-      style: TextStyle(color: isLoading ? kDisabledTextfieldColor : Colors.grey[600]),
-      controller: _controller,
-      textInputAction: TextInputAction.next,
-      enabled: isLoading ? false : true,
-      cursorColor: Theme.of(context).primaryColor,
-      keyboardType: TextInputType.emailAddress,
-      decoration: InputDecoration(
-        prefixIcon: Icon(Icons.mail, color: isLoading ? kDisabledTextfieldColor : Colors.grey,),
-        labelText: 'E-Mail',
-          labelStyle: TextStyle(
-                          color: isLoading ? kDisabledTextfieldColor: Colors.grey
+  Widget getSigninForm() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Column(
+        children: <Widget>[
+          getEMailTextfield(),
+          SizedBox(height: 16),
+          getNameTextfield(),
+          SizedBox(
+            height: 16,
           ),
-        focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).primaryColor
-            )
-        ),
-        enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Colors.grey
-            )
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-            color: kDisabledTextfieldColor
-          )
-        )
+          getPasswordTextfield(),
+          SizedBox(
+            height: 16,
+          ),
+          getPasswordConfirmationTextfield(),
+          SizedBox(
+            height: 32.0,
+          ),
+          getSubmitButton(signInButtonKey, kSignInButtonText, signin),
+          getGoToButton(kAlreadyAnAccount, 0)
+        ],
       ),
     );
   }
 
-  Widget _buildPasswordTextfield(){
+  Widget getEMailTextfield() {
     TextEditingController _controller = TextEditingController();
-    _controller.value = TextEditingValue(text: passwordValue);
-    return TextField(
-      onChanged: (value){
-        passwordValue = value;
-      },
-      onSubmitted: (_){
-        login();
+    _controller.value = TextEditingValue(text: _emailValue);
 
+    return TextField(
+      onChanged: (value) {
+        _emailValue = value;
+      },
+      onSubmitted: (_) {
+        FocusNode nextFocusNode =
+            _currentPageIndex == 0 ? _passwordFocusNode : _nameFocusNode;
+        fieldFocusChange(context, _emailFocusNode, nextFocusNode);
+      },
+      focusNode: _emailFocusNode,
+      style: TextStyle(
+          color: _isLoading ? kDisabledTextfieldColor : Colors.grey[600]),
+      controller: _controller,
+      textInputAction: TextInputAction.next,
+      enabled: _isLoading ? false : true,
+      cursorColor: Theme.of(context).primaryColor,
+      keyboardType: TextInputType.emailAddress,
+      decoration: InputDecoration(
+          prefixIcon: Icon(
+            Icons.mail,
+            color: _isLoading ? kDisabledTextfieldColor : Colors.grey,
+          ),
+          labelText: 'E-Mail',
+          labelStyle: TextStyle(
+              color: _isLoading ? kDisabledTextfieldColor : Colors.grey),
+          focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Theme.of(context).primaryColor)),
+          enabledBorder:
+              OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+          disabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: kDisabledTextfieldColor))),
+    );
+  }
+
+  Widget getPasswordTextfield() {
+    TextEditingController _controller = TextEditingController();
+    _controller.value = TextEditingValue(text: _passwordValue);
+    return TextField(
+      onChanged: (value) {
+        _passwordValue = value;
+      },
+      onSubmitted: (_) {
+        if (_currentPageIndex == 0) {
+          login();
+        } else {
+          fieldFocusChange(context, _passwordFocusNode, _passwordConfirmation);
+        }
       },
       focusNode: _passwordFocusNode,
       controller: _controller,
-      enabled: isLoading ? false : true,
+      enabled: _isLoading ? false : true,
+      obscureText: true,
+      cursorColor: Theme.of(context).primaryColor,
+      textInputAction:
+          _currentPageIndex == 0 ? TextInputAction.go : TextInputAction.next,
+      decoration: InputDecoration(
+          prefixIcon: Icon(
+            Icons.lock,
+            color: _isLoading ? kDisabledTextfieldColor : Colors.grey,
+          ),
+          labelText: 'Password',
+          labelStyle: TextStyle(
+              color: _isLoading ? kDisabledTextfieldColor : Colors.grey),
+          focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Theme.of(context).primaryColor)),
+          enabledBorder:
+              OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+          disabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: kDisabledTextfieldColor))),
+    );
+  }
+
+  Widget getPasswordConfirmationTextfield() {
+    TextEditingController _controller = TextEditingController();
+    _controller.value = TextEditingValue(text: _passwordConfimationValue);
+    return TextField(
+      onChanged: (value) {
+        _passwordConfimationValue = value;
+      },
+      onSubmitted: (_) {
+        signin();
+      },
+      focusNode: _passwordConfirmation,
+      controller: _controller,
+      enabled: _isLoading ? false : true,
       obscureText: true,
       cursorColor: Theme.of(context).primaryColor,
       textInputAction: TextInputAction.go,
       decoration: InputDecoration(
-        prefixIcon: Icon(Icons.lock, color: isLoading? kDisabledTextfieldColor: Colors.grey,),
-        labelText: 'Password',
-        labelStyle: TextStyle(
-          color: isLoading ? kDisabledTextfieldColor: Colors.grey
-        ),
-        focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Theme.of(context).primaryColor
-            )
-        ),
-        enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-                color: Colors.grey
-            )
-        ),
+          prefixIcon: Icon(
+            Icons.lock,
+            color: _isLoading ? kDisabledTextfieldColor : Colors.grey,
+          ),
+          labelText: 'Re-Type Password ',
+          labelStyle: TextStyle(
+              color: _isLoading ? kDisabledTextfieldColor : Colors.grey),
+          focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Theme.of(context).primaryColor)),
+          enabledBorder:
+              OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
           disabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                  color: kDisabledTextfieldColor
+              borderSide: BorderSide(color: kDisabledTextfieldColor))),
+    );
+  }
+
+  Widget getNameTextfield() {
+    TextEditingController _controller = TextEditingController();
+    _controller.value = TextEditingValue(text: _nameValue);
+
+    return TextField(
+      onChanged: (value) {
+        _nameValue = value;
+      },
+      onSubmitted: (_) {
+        fieldFocusChange(context, _nameFocusNode, _passwordFocusNode);
+      },
+      focusNode: _nameFocusNode,
+      style: TextStyle(
+          color: _isLoading ? kDisabledTextfieldColor : Colors.grey[600]),
+      controller: _controller,
+      textInputAction: TextInputAction.next,
+      enabled: _isLoading ? false : true,
+      cursorColor: Theme.of(context).primaryColor,
+      keyboardType: TextInputType.emailAddress,
+      decoration: InputDecoration(
+          prefixIcon: Icon(
+            Icons.person,
+            color: _isLoading ? kDisabledTextfieldColor : Colors.grey,
+          ),
+          labelText: 'Name',
+          labelStyle: TextStyle(
+              color: _isLoading ? kDisabledTextfieldColor : Colors.grey),
+          focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Theme.of(context).primaryColor)),
+          enabledBorder:
+              OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+          disabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: kDisabledTextfieldColor))),
+    );
+  }
+
+  Widget getSubmitButton(GlobalKey key, String text, Function onSubmit) {
+    return Container(
+      key: key,
+      width: buttonWidth,
+      child: FlatButton(
+        onPressed: () {
+          setState(() {
+            _isLoading = true;
+          });
+          animateButton(key);
+          onSubmit();
+        },
+        child: _isLoading
+            ? SpinKitCircle(
+                color: Colors.white,
+                size: 40.0,
               )
-          )
+            : Text(
+                text,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5),
+              ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        padding: EdgeInsets.all(16.0),
+        color: Theme.of(context).primaryColor,
       ),
     );
   }
 
-  Widget _buildLoginButton(){
-    return  Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-        child: Container(
-          key: globalKey,
-          width: buttonWidth,
-          child: FlatButton(onPressed: (){
-                //login();
-                setState(() {
-                  isLoading = true;
-                });
-                animateButton();
-              },
-                child: isLoading ? _buildLoadingCircle() : Text('LOGIN', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: 1.5),),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100)
-                ),
-                padding: EdgeInsets.all(16.0),
-                color: Theme.of(context).primaryColor,
-          ),
-        ),
-    );
+  Widget getGoToButton(String text, int targetPage) {
+    return FlatButton(
+        onPressed: () {
+          if (_pageController.hasClients) {
+            _pageController.animateToPage(targetPage,
+                duration: Duration(milliseconds: 300), curve: Curves.easeInOut);
+          }
+        },
+        child: _isLoading
+            ? Text("")
+            : Text(
+                text,
+                style: TextStyle(
+                    color: Colors.black26,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900),
+              ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+        color: Colors.transparent);
   }
 
-  animateButton(){
-    double initialWidth = globalKey.currentContext.size.width;
-    var controller = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+  Widget animateButton(GlobalKey key) {
+    double initialWidth = key.currentContext.size.width;
+    var controller =
+        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
     animation = Tween(begin: initialWidth, end: 72.0).animate(controller);
 
-    animation.addListener((){
+    animation.addListener(() {
       setState(() {
         buttonWidth = animation.value;
         print(buttonWidth);
@@ -236,52 +338,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     controller.forward();
   }
 
-  Widget _buildLoadingCircle(){
-    return SpinKitCircle(
-      color: Colors.white,
-      size: 40.0,
-    );
+  login() async{
+    await APIService().login(_emailValue, _passwordValue);
   }
 
-  Widget _buildSigninButton(){
-    return FlatButton(onPressed: (){},
-        child: Text('Not an Account yet? Sign in!', style: TextStyle(color: Colors.black26, fontSize: 16, fontWeight: FontWeight.w900),),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(40)
-        ),
-        color: Colors.transparent
-    );
+  signin() {
+    print('Signin');
   }
-
-  _fieldFocusChange(BuildContext context, FocusNode currentFocus,FocusNode nextFocus) {
-    currentFocus.unfocus();
-    FocusScope.of(context).requestFocus(nextFocus);
-  }
-
-  login(){
-    print("Login");
-  }
-
-
-}
-
-class BottomCurveClipper extends CustomClipper<Path>{
-  @override
-  Path getClip(Size size) {
-    Path path = Path();
-    Offset startPoint = Offset(0, size.height* 0.85);
-    Offset endPoint = Offset(size.width, size.height * 0.85);
-
-    path.lineTo(startPoint.dx, startPoint.dy);
-    path.quadraticBezierTo(size.width * 0.5, size.height, endPoint.dx, endPoint.dy);
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return true;
-  }
-
 }

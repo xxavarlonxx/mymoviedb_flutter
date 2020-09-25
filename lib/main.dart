@@ -10,13 +10,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: Colors.orange
-      ),
+      theme: ThemeData(primaryColor: Colors.orange),
       initialRoute: 'login',
-      routes: {
-        'login': (_) => LoginScreen()
-      },
+      routes: {'login': (_) => LoginScreen()},
     );
   }
 }
